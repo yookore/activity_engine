@@ -30,8 +30,8 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = (
-    #'django.contrib.admin',
-    #'django.contrib.auth',
+    'django.contrib.admin',
+    'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
@@ -64,8 +64,11 @@ WSGI_APPLICATION = 'activity_engine.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'activity_engine',
+        'HOST': '127.0.0.1',
+        'USER': 'root',
+        'PASSWORD': 'wordpass15'
     }
 }
 
@@ -89,13 +92,15 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 #Custom configuration applied by Jome
-AUTH_USER_MODEL = 'feed_engine.models.User'
+#AUTH_USER_MODEL = 'feed_engine.models.User'
 
 AUTHENTICATION_BACKENDS = (
     'feed_engine.auth.YookoreBackend'
 )
 
 STREAM_DEFAULT_KEYSPACE = "yookore"
+
+STREAM_ACTIVITY_TABLE = "activities"
 
 STREAM_CASSANDRA_HOSTS = ['192.168.10.200', '192.168.10.201', '192.168.10.202']
 

@@ -76,6 +76,9 @@ class StatusUpdate(Content):
     text = columns.Text()
     location = columns.Text()
 
+    def __str__(self):
+        return "StatusUpdate: { " + self.author + ": " + self.text + " }"
+
     @property
     def create_activity(self):
         print "Object id: ", self.id
