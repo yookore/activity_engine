@@ -7,5 +7,6 @@ urlpatterns = patterns('',
     # url(r'^blog/', include('blog.urls')),
 
     url(r'^admin/', include(admin.site.urls)),
-    url(r'^gena/$', 'feed_engine.views.generate_activities', name='gen_activities')
+    url(r'^gena/(?P<username>[\w\d]+)/$', 'feed_engine.views.generate_activities', name='gen_activities'),
+    url(r'^geta/(?P<username>[\w\d]+)/$', 'feed_engine.views.get_activities', name='get_activities'),
 )

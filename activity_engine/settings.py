@@ -41,6 +41,7 @@ INSTALLED_APPS = (
     'feed_engine',
     'django_cassandra_engine',
     'django_extensions',
+    'rest_framework'
 
 )
 
@@ -106,3 +107,12 @@ STREAM_CASSANDRA_HOSTS = ['192.168.10.200', '192.168.10.201', '192.168.10.202']
 
 #CELERY_ACCEPT_CONTENT = ['application/json', 'application/x-python-serialize']
 CELERY_ACCEPT_CONTENT = ['pickle', 'json']
+
+TEMPLATE_LOADERS = (
+    'django.template.loaders.filesystem.Loader',
+    'django.template.loaders.app_directories.Loader'
+)
+
+TEMPLATE_DIRS = (
+    os.path.join(BASE_DIR, 'templates'),
+)

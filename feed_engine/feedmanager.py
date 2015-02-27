@@ -19,7 +19,6 @@ class FeedManager(Manager):
 
     def addactivity(self, content):
         activity = content.create_activity
-        print content.author
         self.add_user_activity(content.author, activity)
 
 

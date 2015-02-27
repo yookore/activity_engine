@@ -55,6 +55,13 @@ class Relationship(Model):
     creationdate = columns.DateTime(default=datetime.datetime.now())
     status = columns.Text()
 
+class Comment(Model):
+    __table_name__ = "comments"
+    id = columns.TimeUUID(primary_key=uuid1())
+    text = columns.Text()
+    author = columns.Text()
+
+
 class Content(Model):
     """
     Base class for all content types in Yookore. Content types like status updates, photos,
@@ -62,13 +69,14 @@ class Content(Model):
     """
     __table_name__ = 'content'
     author = columns.Text(primary_key=True)
-    id = columns.TimeUUID(primary_key=True, default=uuid1, clustering_order="desc") #content id
+    id = columns.TimeUUID(primary_key=True, default=uuid1(), clustering_order="desc") #content id
     content_type = columns.Text(polymorphic_key=True, index=True)
     creationdate = columns.DateTime(default=datetime.datetime.now())
     tags = columns.List(value_type=columns.Text())
     viewcount = columns.Integer()
     likescount = columns.Integer()
     commentcount = columns.Integer()
+    lastupdated = columns.DateTime(default=creationdate)
 
 class StatusUpdate(Content):
     __polymorphic_key__ = "statusupdate"
@@ -76,18 +84,22 @@ class StatusUpdate(Content):
     text = columns.Text()
     location = columns.Text()
 
+    def get_object_type(self):
+        return str(self.__polymorphic_key__)
+
     def __str__(self):
         return "StatusUpdate: { " + self.author + ": " + self.text + " }"
 
     @property
     def create_activity(self):
-        print "Object id: ", self.id
-        print "User id: ", self.author
         activity = Activity(
             actor=self.author,
             verb=PostVerb,
             object=self.id,
-            #time = self.created_at
+            object_type = self.get_object_type(),
+            target=None,
+            target_type = None,
+            time = self.creationdate
         )
 
         return activity
@@ -95,10 +107,26 @@ class StatusUpdate(Content):
 class BlogPost(Content):
     __polymorphic_key__ = "blogpost"
 
+    title = columns.Text()
     text = columns.Text()
 
+    @property
     def create_activity(self):
-        pass
+        activity = Activity(
+            actor=self.author,
+            verb=PostVerb,
+            object=self.id,
+            object_type = self.__polymorphic_key__,
+            target=None,
+            target_type = None,
+            time = self.creationdate,
+        )
+
+        return activity
+
+    def __str__(self):
+        return "Blogpost: { " + self.author + ": " + self.title + " }"
+
 
 class Photo(Content):
     __polymorphic_key__ = "photo"
@@ -123,16 +151,13 @@ class Audio(Content):
         pass
 
 
-if __name__ == '__main__':
-    from feed_engine.feedmanager import manager
-    from feed_engine.verbs import PostVerb
-    from feed_engine.models import StatusUpdate
+class ActivityModel(object):
+    published = "" #datetime.isofromat
+    actor = {} #actor dictionary object
+    verb = "" #string
+    object = {} #object dictionary
+    target = {} #dictionary
+    title = ""
+    content = {}
+    updated = ""
 
-    status = StatusUpdate()
-    status.author = 'jomski2009'
-    status.text = 'Trying to ensure that I can save stuff in the feeds!'
-    status.location = 'Randburg'
-
-    status.save()
-
-    manager.addactivity(status)
