@@ -49,11 +49,12 @@ class User(Model):
 
 class Relationship(Model):
     __table_name__ = "relationships"
-    relationship_id = columns.UUID(primary_key=True, default=uuid4())
-    user = columns.Text(partition_key=True)
-    target_user = columns.Text()
+    user = columns.Text(primary_key=True)
+    target_user = columns.Text(primary_key=True)
+    relationship_id = columns.UUID(default=uuid4())
     creationdate = columns.DateTime(default=datetime.datetime.now())
-    status = columns.Text()
+    status = columns.Text() #active, pending, retired, deleted
+    type = columns.Text() #following, friend
 
 class Comment(Model):
     __table_name__ = "comments"
@@ -76,7 +77,7 @@ class Content(Model):
     viewcount = columns.Integer()
     likescount = columns.Integer()
     commentcount = columns.Integer()
-    lastupdated = columns.DateTime(default=creationdate)
+    lastupdated = columns.DateTime(default=datetime.datetime.now())
 
 class StatusUpdate(Content):
     __polymorphic_key__ = "statusupdate"

@@ -9,7 +9,7 @@ from loremipsum import get_sentence
 from rest_framework.renderers import JSONRenderer
 from cassandra.cluster import Cluster
 
-from feed_engine import StatusUpdate, BlogPost
+from feed_engine import StatusUpdate, BlogPost, Relationship
 from feed_engine.feedmanager import manager
 from feed_engine.models import ActivityModel
 from feed_engine.serializers import ActivityModelSerializer
@@ -20,6 +20,7 @@ session = cluster.connect('yookore')
 
 # Eventually we need prepared statement for the different types
 a_e_statement = session.prepare("select * from content where author = ? and id = ?")
+followers_statment = session.prepare("select target_user from relationships where user = ?")
 
 
 def generate_activities(request, username):
@@ -29,14 +30,24 @@ def generate_activities(request, username):
     :return: Plain text message
     '''
 
+    q = Relationship.objects.filter(user=username)
+    ids = []
+    for rel in q:
+        print rel.target_user
+        ids.append(rel.target_user)
+    print ids
+
+    # result = session.execute(followers_statment, [username])
+    # print(result)
+
     counter = 0
-    usernames = ['jomski2009', 'lisanoritha', 'steveolowoyeye', 'Tomisin_fashina', 'pimisi', 'pastorchrislive']
-    while counter < 400000:
+    usernames = ['jomski2009', 'lisanoritha', 'steveolowoyeye', 'Tomisin_fashina', 'ptchankue']
+    while counter < 1000:
         number = random.randint(1, 2)
 
         if number == 1:
             status = StatusUpdate()
-            status.author = usernames[random.randint(0, 5)]
+            status.author = usernames[random.randint(0, 4)]
             status.text = get_sentence()
             status.location = 'Randburg'
             status.commentcount = random.randint(1, 999)
@@ -50,7 +61,7 @@ def generate_activities(request, username):
 
         if number == 2:
             blogpost = BlogPost()
-            blogpost.author = usernames[random.randint(0, 5)]
+            blogpost.author = usernames[random.randint(0, 4)]
             blogpost.title = get_sentence()
             blogpost.text = get_sentence()
             blogpost.commentcount = random.randint(1, 10000)
@@ -63,19 +74,25 @@ def generate_activities(request, username):
             manager.addactivity(blogpost)
 
         counter += 1
-        time.sleep(0.5)
 
     return HttpResponse("Generating activities")
 
 
 def get_activities(request, username='jomski2009'):
-    feed = manager.get_user_feed(username)
 
-    activities = list(feed[:25])
+    # feed = manager.get_user_feed(username)
+    # activities = list(feed[:25])
+    Relationship.create(user='steveolowoyeye', target_user='ptchankue', creationdate=datetime.datetime.now(), relationship_id=uuid.uuid4(), status='active', type='friend')
+
+    flat_feed = manager.get_feeds(username)['flat']
+    flats = list(flat_feed[:10])
+
+    for a in flats:
+        print a
 
     # enrich_activities(activities)
     #return HttpResponse(activities)
-    return render(request, 'feed_engine/feed.html', {'activities': enrich_activities(activities)})
+    return render(request, 'feed_engine/feed.html', {'activities': enrich_activities(flats)})
 
 
 def enrich_activities(activities):

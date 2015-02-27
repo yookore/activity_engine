@@ -1,4 +1,5 @@
-from stream_framework.feed_managers.base import Manager
+from stream_framework.feed_managers.base import Manager, FanoutPriority
+from feed_engine import Relationship
 from feed_engine.feeds import UserFeed, FlatFeed, NotificationFeed
 
 
@@ -11,11 +12,17 @@ class FeedManager(Manager):
     )
 
     def get_user_follower_ids(self, user_id):
+        rels = Relationship.objects.filter(user=user_id)
+        ids_high = []
+        ids_low = []
+        for rel in rels:
+            ids_high.append(rel.target_user)
+
         #user_id will have to be usernames
         #return a dictionary of usernames with different priorities
         #e.g, {'HIGH':[], 'LOW':[]}
 
-        return {}
+        return {FanoutPriority.HIGH:ids_high}
 
     def addactivity(self, content):
         activity = content.create_activity
