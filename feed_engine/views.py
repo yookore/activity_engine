@@ -87,14 +87,16 @@ def generate_activities(request, username):
 
 
 @csrf_exempt
-def get_activities(request, username, nextset=None):
+def get_activities(request, username, nextset=None, pointer='next'):
     feed = manager.get_user_feed(username)
     Activity.__table_name__ = "activities"
     paged = PaginationObject()
     paged.nextset = nextset
 
-    if nextset is not None:
+    if nextset is not None and pointer == 'next':
         uncapped_activities = Activity.filter(feed_id=feed.key).filter(activity_id__lt=nextset)
+    elif nextset is not None and pointer == 'previous':
+        uncapped_activities = Activity.filter(feed_id=feed.key).filter(activity_id__gt=nextset)
     else:
         uncapped_activities = Activity.filter(feed_id=feed.key)
 
@@ -102,20 +104,13 @@ def get_activities(request, username, nextset=None):
     # activities = list(feed[:5])
     activities = uncapped_activities[:50]
     a_id = activities[len(activities) - 1].activity_id
-    print a_id
-    print type(a_id)
-    if isinstance(a_id, uuid.UUID):
-        print "I am a UUID!!!"
-        print a_id.get_time()
-        print a_id.get_node()
-
-        t = uuid.uuid1(node=184857109678040)
-        print t
+    p_id = activities[0].activity_id
 
     itemlist = enrich_custom_activities(activities)
 
     results = {'itemsperpage': len(activities), 'list': itemlist,
-               'next': "http://localhost:8000/" + username + "/activities/" + str(a_id)}
+               'next': "http://localhost:8000/" + username + "/activities/next/" + str(a_id),
+               'previous': "http://localhost:8000/"+username+"/activities/previous/" + str(p_id)}
 
     return JSONResponse(results)
 

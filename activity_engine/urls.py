@@ -8,6 +8,6 @@ urlpatterns = patterns('',
 
     url(r'^admin/', include(admin.site.urls)),
     url(r'^(?P<username>[\w\d]+)/generate/$', 'feed_engine.views.generate_activities', name='gen_activities'),
-    url(r'^(?P<username>[\w\d]+)/activities/(?P<nextset>[\w\d\-]+)/$', 'feed_engine.views.get_activities', name='get_activities'),
+    url(r'^(?P<username>[\w\d]+)/activities/(?P<pointer>[next|previous])/(?P<nextset>[\w\d\-]+)/$', 'feed_engine.views.get_activities', name='get_activities'),
     url(r'^(?P<username>[\w\d]+)/activities/$', 'feed_engine.views.get_activities', name='get_activities'),
 )
