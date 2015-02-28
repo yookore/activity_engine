@@ -88,7 +88,9 @@ def generate_activities(request, username):
 
 @csrf_exempt
 def get_activities(request, username, nextset=None, pointer='next'):
-    feed = manager.get_user_feed(username)
+    #feed = manager.get_user_feed(username)
+    feed = manager.get_feeds(username)['flat']
+
     Activity.__table_name__ = "activities"
     paged = PaginationObject()
     paged.nextset = nextset
@@ -120,6 +122,11 @@ def get_flat_activities(request, username):
     flat_feed = manager.get_feeds(username)['flat']
     activities = list(flat_feed[:25])
     return JSONResponse(enrich_activities(activities))
+
+
+
+
+
 
 
 # Utility methods
