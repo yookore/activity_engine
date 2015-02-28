@@ -24,3 +24,7 @@ class ActivityModelSerializer(serializers.Serializer):
     verb  = serializers.CharField()
     object = ObjectSerializer()
     updated = serializers.DateTimeField()
+
+class PaginationObjectSerializer(serializers.Serializer):
+    next = serializers.UUIDField()
+    previous = serializers.UUIDField()

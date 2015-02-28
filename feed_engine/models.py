@@ -2,6 +2,7 @@ from uuid import uuid1, uuid4
 from cqlengine import Model
 from cqlengine import columns
 import datetime
+from django.db import models
 from django.utils.timezone import make_naive
 import pytz
 from stream_framework.activity import Activity
@@ -162,3 +163,5 @@ class ActivityModel(object):
     content = {}
     updated = ""
 
+class PaginationObject(object):
+    nextset = uuid1()
