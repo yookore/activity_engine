@@ -3,6 +3,7 @@ import random
 import uuid
 
 from django.http import HttpResponse
+from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from loremipsum import get_sentence
 from rest_framework.renderers import JSONRenderer
@@ -30,6 +31,10 @@ class JSONResponse(HttpResponse):
         kwargs['content_type'] = 'application/json'
         super(JSONResponse, self).__init__(content, **kwargs)
 
+
+
+def home(request):
+    return render(request, 'feed_engine/home.html', {})
 
 def generate_activities(request, username):
     '''
