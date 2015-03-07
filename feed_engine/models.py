@@ -153,7 +153,7 @@ class Audio(Content):
         pass
 
 
-class ActivityModel(object):
+class ActivityItemModel(object):
     published = "" #datetime.isofromat
     actor = {} #actor dictionary object
     verb = "" #string

@@ -14,7 +14,7 @@ from stream_framework.verbs import get_verb_by_id
 
 from feed_engine import StatusUpdate, BlogPost, Relationship
 from feed_engine.feedmanager import manager
-from feed_engine.models import ActivityModel, PaginationObject
+from feed_engine.models import ActivityItemModel, PaginationObject
 from feed_engine.serializers import ActivityModelSerializer
 
 
@@ -40,6 +40,7 @@ def home(request):
 @api_view(['POST'])
 def create_activity(request):
     message = request.data
+    print message
     from stream_framework.activity import Activity
     activity = Activity(
         actor=message['author'],
@@ -161,7 +162,7 @@ def enrich_activities(activities):
     list = []
     for a in activities:
         #Build the activity stream object...
-        activity_item = ActivityModel()
+        activity_item = ActivityItemModel()
 
         object = session.execute(a_e_statement, [a.actor_id, a.object_id])
         activity_item.published = object[0].creationdate
@@ -220,7 +221,7 @@ def enrich_custom_activities(activities):
     list = []
     for a in activities:
         #Build the activity stream object...
-        activity_item = ActivityModel()
+        activity_item = ActivityItemModel()
 
         object = session.execute(a_e_statement, [a.actor, a.object])
         activity_item.published = object[0].creationdate

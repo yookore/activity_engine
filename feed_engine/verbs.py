@@ -12,6 +12,10 @@ class LikeVerb(Verb):
     infinitive = 'like'
     past_tense = 'liked'
 
+class ViewVerb(Verb):
+    id  = 12
+    infinitive = 'view'
+    past_tense = 'viewed'
 
 register(PostVerb)
 register(LikeVerb)
