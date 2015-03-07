@@ -73,17 +73,17 @@ class Content(Model):
     author = columns.Text(primary_key=True)
     id = columns.TimeUUID(primary_key=True, default=uuid1(), clustering_order="desc") #content id
     content_type = columns.Text(polymorphic_key=True, index=True)
-    creationdate = columns.DateTime(default=datetime.datetime.now())
+    created_at = columns.DateTime(default=datetime.datetime.now())
     tags = columns.List(value_type=columns.Text())
-    viewcount = columns.Integer()
-    likescount = columns.Integer()
-    commentcount = columns.Integer()
-    lastupdated = columns.DateTime(default=datetime.datetime.now())
+    view_count = columns.Integer()
+    like_count = columns.Integer()
+    comment_count = columns.Integer()
+    updated_at = columns.DateTime(default=datetime.datetime.now())
 
 class StatusUpdate(Content):
     __polymorphic_key__ = "statusupdate"
 
-    text = columns.Text()
+    body = columns.Text()
     location = columns.Text()
 
     def get_object_type(self):
@@ -101,7 +101,7 @@ class StatusUpdate(Content):
             object_type = self.get_object_type(),
             target=None,
             target_type = None,
-            time = self.creationdate
+            time = self.created_at
         )
 
         return activity
@@ -110,7 +110,7 @@ class BlogPost(Content):
     __polymorphic_key__ = "blogpost"
 
     title = columns.Text()
-    text = columns.Text()
+    body = columns.Text()
 
     @property
     def create_activity(self):
@@ -121,7 +121,7 @@ class BlogPost(Content):
             object_type = self.__polymorphic_key__,
             target=None,
             target_type = None,
-            time = self.creationdate,
+            time = self.created_at,
         )
 
         return activity
