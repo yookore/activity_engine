@@ -63,9 +63,9 @@ def generate_activities(request, username):
             status.author = username
             status.text = get_sentence()
             status.location = 'Randburg'
-            status.commentcount = random.randint(1, 999)
-            status.viewcount = random.randint(1, 999)
-            status.likescount = random.randint(1, 999)
+            status.comment_count = random.randint(1, 999)
+            status.view_count = random.randint(1, 999)
+            status.like_count = random.randint(1, 999)
             status.id = uuid.uuid1()
 
             status.save()
@@ -77,9 +77,9 @@ def generate_activities(request, username):
             blogpost.author = username
             blogpost.title = get_sentence()
             blogpost.text = get_sentence()
-            blogpost.commentcount = random.randint(1, 10000)
-            blogpost.viewcount = random.randint(1, 999)
-            blogpost.likescount = random.randint(1, 999)
+            blogpost.comment_count = random.randint(1, 10000)
+            blogpost.view_count = random.randint(1, 999)
+            blogpost.like_count = random.randint(1, 999)
             blogpost.id = uuid.uuid1()
 
             blogpost.save()
