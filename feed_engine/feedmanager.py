@@ -28,5 +28,7 @@ class FeedManager(Manager):
         activity = content.create_activity
         self.add_user_activity(content.author, activity)
 
+    def addactivity_rest(self, actor, activity):
+        self.add_user_activity(actor, activity)
 
 manager = FeedManager()

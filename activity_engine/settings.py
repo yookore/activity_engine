@@ -39,7 +39,6 @@ INSTALLED_APPS = (
     'cqlengine',
     'stream_framework',
     'feed_engine',
-    'django_cassandra_engine',
     'django_extensions',
     'rest_framework'
 
@@ -103,7 +102,8 @@ STREAM_DEFAULT_KEYSPACE = "yookore"
 
 STREAM_ACTIVITY_TABLE = "activities"
 
-STREAM_CASSANDRA_HOSTS = ['192.168.10.200', '192.168.10.201', '192.168.10.202']
+#STREAM_CASSANDRA_HOSTS = ['192.168.10.200', '192.168.10.201', '192.168.10.202']
+STREAM_CASSANDRA_HOSTS = ['127.0.0.1']
 
 #CELERY_ACCEPT_CONTENT = ['application/json', 'application/x-python-serialize']
 CELERY_ACCEPT_CONTENT = ['pickle', 'json']
@@ -116,3 +116,5 @@ TEMPLATE_LOADERS = (
 TEMPLATE_DIRS = (
     os.path.join(BASE_DIR, 'templates'),
 )
+
+BROKER_URL = 'amqp://guest:Wordpass15@192.168.2.229:5672//'

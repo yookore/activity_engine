@@ -6,6 +6,7 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from loremipsum import get_sentence
+from rest_framework.decorators import api_view
 from rest_framework.renderers import JSONRenderer
 from cassandra.cluster import Cluster
 from stream_framework.storage.cassandra.models import Activity
@@ -35,6 +36,23 @@ class JSONResponse(HttpResponse):
 
 def home(request):
     return render(request, 'feed_engine/home.html', {})
+
+@api_view(['POST'])
+def create_activity(request):
+    message = request.data
+    from stream_framework.activity import Activity
+    activity = Activity(
+        actor=message['author'],
+        object=message['object_id'],
+        object_type=message['object_type'],
+        verb= get_verb_by_id(int(message['verb_id'])),
+        target=message['target_id'],
+        target_type=message['target_type']
+    )
+
+    manager.addactivity_rest(message['author'], activity)
+
+    return JSONResponse(message)
 
 def generate_activities(request, username):
     '''
