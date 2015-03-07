@@ -19,4 +19,5 @@ class ViewVerb(Verb):
 
 register(PostVerb)
 register(LikeVerb)
+register(ViewVerb)
 
