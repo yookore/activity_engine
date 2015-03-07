@@ -33,7 +33,7 @@ class Activity(BaseActivity):
     extra_context = columns.Bytes(required=False)
     object = columns.TimeUUID(required=True)
     object_type = columns.Text(required=True)
-    target = columns.TimeUUID(required=False)
+    target = columns.Text(required=False)
     target_type = columns.Text(required=False)
     time = columns.DateTime(required=False)
     verb = columns.Integer(required=True)
