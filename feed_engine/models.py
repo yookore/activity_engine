@@ -90,7 +90,7 @@ class StatusUpdate(Content):
         return str(self.__polymorphic_key__)
 
     def __str__(self):
-        return "StatusUpdate: { " + self.author + ": " + self.text + " }"
+        return "StatusUpdate: { " + self.author + ": " + self.body + " }"
 
     @property
     def create_activity(self):

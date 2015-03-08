@@ -13,6 +13,8 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 
+
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.7/howto/deployment/checklist/
 
@@ -40,7 +42,8 @@ INSTALLED_APPS = (
     'stream_framework',
     'feed_engine',
     'django_extensions',
-    'rest_framework'
+    'rest_framework',
+    'users',
 
 )
 
@@ -102,8 +105,8 @@ STREAM_DEFAULT_KEYSPACE = "yookore"
 
 STREAM_ACTIVITY_TABLE = "activities"
 
-#STREAM_CASSANDRA_HOSTS = ['192.168.10.200', '192.168.10.201', '192.168.10.202']
-STREAM_CASSANDRA_HOSTS = ['127.0.0.1']
+STREAM_CASSANDRA_HOSTS = ['192.168.10.200', '192.168.10.201', '192.168.10.202']
+#STREAM_CASSANDRA_HOSTS = ['127.0.0.1']
 
 #CELERY_ACCEPT_CONTENT = ['application/json', 'application/x-python-serialize']
 CELERY_ACCEPT_CONTENT = ['pickle', 'json']
@@ -118,3 +121,5 @@ TEMPLATE_DIRS = (
 )
 
 BROKER_URL = 'amqp://guest:Wordpass15@192.168.2.229:5672//'
+
+BASE_URL = "http://localhost:8000/"

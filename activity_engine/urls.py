@@ -11,5 +11,7 @@ urlpatterns = patterns('',
     url(r'^(?P<username>[\w\d]+)/generate/$', 'feed_engine.views.generate_activities', name='gen_activities'),
     url(r'^(?P<username>[\w\d]+)/activities/(?P<pointer>(next|previous))/(?P<nextset>[\w\d\-]+)/$', 'feed_engine.views.get_activities', name='get_activities'),
     url(r'^(?P<username>[\w\d]+)/activities/$', 'feed_engine.views.get_activities', name='get_activities'),
-    url(r'^activities/add$', 'feed_engine.views.create_activity', name='add_activity')
+    url(r'^activities/add$', 'feed_engine.views.create_activity', name='add_activity'),
+    url(r'^users/', include('users.urls')),
+    url(r'^content/(?P<username>[\w\d\-]+)/(?P<content_id>[\w\d\-]+)$', 'users.views.get_content', name='get_content')
 )

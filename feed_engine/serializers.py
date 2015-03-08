@@ -17,6 +17,7 @@ class ObjectSerializer(serializers.Serializer):
     views = serializers.IntegerField(required=False)
     comments = serializers.IntegerField(required=False)
     publishdate = serializers.DateTimeField()
+    url = serializers.CharField(required=False)
 
 class ActivityModelSerializer(serializers.Serializer):
     published = serializers.DateTimeField()

@@ -1,6 +1,8 @@
 import datetime
 import random
 import uuid
+from django.conf import settings
+from django.core.urlresolvers import resolve
 
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -35,7 +37,7 @@ class JSONResponse(HttpResponse):
 
 
 def home(request):
-    return render(request, 'feed_engine/home.html', {})
+    return render(request, 'feed_engine/home.html')
 
 @api_view(['POST'])
 def create_activity(request):
@@ -112,9 +114,9 @@ def generate_activities(request, username):
 
 @csrf_exempt
 def get_activities(request, username, nextset=None, pointer='next'):
-    #feed = manager.get_user_feed(username)
-    feed = manager.get_feeds(username)['flat']
-
+    feed = manager.get_user_feed(username)
+    #feed = manager.get_feeds(username)['flat']
+    print "Feed key: ", feed.key
     Activity.__table_name__ = "activities"
     paged = PaginationObject()
     paged.nextset = nextset
@@ -128,15 +130,15 @@ def get_activities(request, username, nextset=None, pointer='next'):
 
 
     # activities = list(feed[:5])
-    activities = uncapped_activities[:50]
+    activities = uncapped_activities[:25]
     a_id = activities[len(activities) - 1].activity_id
     p_id = activities[0].activity_id
 
     itemlist = enrich_custom_activities(activities)
 
     results = {'itemsperpage': len(activities), 'list': itemlist,
-               'next': "http://localhost:8000/" + username + "/activities/next/" + str(a_id),
-               'previous': "http://localhost:8000/"+username+"/activities/previous/" + str(p_id)}
+               'next': settings.BASE_URL + username + "/activities/next/" + str(a_id),
+               'previous': settings.BASE_URL + username+"/activities/previous/" + str(p_id)}
 
     return JSONResponse(results)
 
@@ -175,7 +177,7 @@ def enrich_activities(activities):
         activity_item.actor['objecttype'] = 'yookos:person'
         activity_item.actor['creationdate'] = actor_object[0].creationdate
         activity_item.actor['lastprofileupdate'] = actor_object[0].lastprofileupdate
-        activity_item.actor['url'] = "https://www.yookos.com/" + actor_object[0].username
+        activity_item.actor['url'] = settings.BASE_URL + 'users/' +actor_object[0].username
 
         #verb element
         activity_item.verb = a.verb.past_tense
@@ -194,6 +196,7 @@ def enrich_activities(activities):
         activity_item.object['likes'] = content_object[0].likescount
         activity_item.object['views'] = content_object[0].viewcount
         activity_item.object['commentcount'] = content_object[0].commentcount
+        activity_item.object['url'] = settings.BASE_URL + 'content/' + actor_object[0].username + "/" + content_object[0].id
 
 
         #Updated element
@@ -222,50 +225,57 @@ def enrich_custom_activities(activities):
     for a in activities:
         #Build the activity stream object...
         activity_item = ActivityItemModel()
-
+        print a_e_statement, a.actor, a.object
         object = session.execute(a_e_statement, [a.actor, a.object])
-        activity_item.published = object[0].creationdate
+        print type(object)
+        if len(object) > 0:
 
-        actor_object = session.execute("Select * from users where username = '" + a.actor + "'")
+            #raise Exception(object)
+            activity_item.published = object[0].created_at
 
-        #Actor element
-        activity_item.actor['id'] = actor_object[0].username
-        activity_item.actor['displayname'] = actor_object[0].firstname + " " + actor_object[0].lastname
-        activity_item.actor['objecttype'] = 'yookos:person'
-        activity_item.actor['creationdate'] = actor_object[0].creationdate
-        activity_item.actor['lastprofileupdate'] = actor_object[0].lastprofileupdate
-        activity_item.actor['url'] = "https://www.yookos.com/" + actor_object[0].username
+            actor_object = session.execute("Select * from users where username = '" + a.actor + "'")
 
-        #verb element
-        activity_item.verb = (get_verb_by_id(a.verb)).past_tense
+            #raise Exception(actor_object)
 
-        content_object = session.execute(
-            "Select * from content where author = '" + a.actor + "' and  id = " + str(a.object))
+            #Actor element
+            activity_item.actor['id'] = actor_object[0].username
+            activity_item.actor['displayname'] = actor_object[0].firstname + " " + actor_object[0].lastname
+            activity_item.actor['objecttype'] = 'yookos:person'
+            activity_item.actor['creationdate'] = actor_object[0].creationdate
+            activity_item.actor['lastprofileupdate'] = actor_object[0].lastprofileupdate
+            activity_item.actor['url'] = settings.BASE_URL + "users/"+actor_object[0].username
 
-        #object element
-        activity_item.object['id'] = content_object[0].id
-        activity_item.object['type'] = content_object[0].content_type
-        if content_object[0].title:
-            activity_item.object['title'] = content_object[0].title
-        if content_object[0].text:
-            activity_item.object['text'] = content_object[0].text
-        activity_item.object['publishdate'] = content_object[0].creationdate
-        activity_item.object['likes'] = content_object[0].likescount
-        activity_item.object['views'] = content_object[0].viewcount
-        activity_item.object['commentcount'] = content_object[0].commentcount
+            #verb element
+            activity_item.verb = (get_verb_by_id(a.verb)).past_tense
 
-
-        #Updated element
-        if content_object[0].lastupdated:
-            activity_item.updated = content_object[0].lastupdated
-        else:
-            activity_item.updated = content_object[0].creationdate
-
-        #Target element coming soon
+            content_object = session.execute(
+                "Select * from content where author = '" + a.actor + "' and  id = " + str(a.object))
+            #raise Exception(content_object)
+            #object element
+            activity_item.object['id'] = content_object[0].id
+            activity_item.object['type'] = content_object[0].content_type
+            if content_object[0].title:
+                activity_item.object['title'] = content_object[0].title
+            if content_object[0].body:
+                activity_item.object['text'] = content_object[0].body
+            activity_item.object['publishdate'] = content_object[0].created_at
+            activity_item.object['likes'] = content_object[0].like_count
+            activity_item.object['views'] = content_object[0].view_count
+            activity_item.object['commentcount'] = content_object[0].comment_count
+            activity_item.object['url'] = settings.BASE_URL + "content/" + actor_object[0].username + "/"+ str(content_object[0].id)
 
 
-        serializer = ActivityModelSerializer(activity_item)
-        list.append(serializer.data)
+            #Updated element
+            if content_object[0].updated_at:
+                activity_item.updated = content_object[0].updated_at
+            else:
+                activity_item.updated = content_object[0].created_at
+
+            #Target element coming soon
+
+
+            serializer = ActivityModelSerializer(activity_item)
+            list.append(serializer.data)
     end_time = datetime.datetime.now()
     elapsed_time = end_time - start_time
     print "Elapsed time: ", elapsed_time
