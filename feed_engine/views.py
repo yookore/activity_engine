@@ -6,6 +6,7 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
+import exceptions
 from loremipsum import get_sentence
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -43,13 +44,14 @@ def home(request):
 @api_view(['POST'])
 def create_activity(request):
     '''
+
     Creates an activity item to be fed to user streams
 
     And I will add some more blah blah blah here
 
     And it goes on and on
     ---
-
+    # YAML
     type: &activity_type
         author:
             required: true
@@ -103,7 +105,7 @@ def create_activity(request):
 @api_view(['GET'])
 def get_activities(request, username, nextset=None, pointer='next'):
     '''
-    Gets activities for a given Yookos user
+    Gets a timeline of activities for a given Yookos user
 
     ---
     parameters_strategy: merge
@@ -131,24 +133,73 @@ def get_activities(request, username, nextset=None, pointer='next'):
 
 
     # activities = list(feed[:5])
-    activities = uncapped_activities[:25]
-    a_id = activities[len(activities) - 1].activity_id
-    p_id = activities[0].activity_id
 
-    itemlist = enrich_custom_activities(activities)
+    try:
+        activities = uncapped_activities[:25]
+        a_id = activities[len(activities) - 1].activity_id
+        p_id = activities[0].activity_id
+        itemlist = enrich_custom_activities(activities)
 
-    results = {'itemsperpage': len(activities), 'list': itemlist,
-               'next': settings.BASE_URL + username + "/activities/next/" + str(a_id),
-               'previous': settings.BASE_URL + username + "/activities/previous/" + str(p_id)}
+        results = {'itemsperpage': len(activities), 'list': itemlist,
+                   'next': settings.BASE_URL + username + "/activities/next/" + str(a_id),
+                   'previous': settings.BASE_URL + username + "/activities/previous/" + str(p_id)}
 
-    return Response(results, status=status.HTTP_200_OK)
+        return Response(results, status=status.HTTP_200_OK)
+    except (IndexError) as e:
+        if isinstance(e, exceptions.IndexError):
+            errormsg = dict(error="No activity for the given request parameters for this user could be found")
+            return Response(errormsg, status=status.HTTP_404_NOT_FOUND)
+        return Response("An unknown error occurred", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@csrf_exempt
-def get_flat_activities(request, username):
-    flat_feed = manager.get_feeds(username)['flat']
-    activities = list(flat_feed[:25])
-    return Response(enrich_custom_activities(activities))
+@api_view(['GET'])
+def get_flat_activities(request, username, nextset=None, pointer='next'):
+    '''
+    Gets a timeline of all followed activities for a given Yookos user
+
+    ---
+    parameters_strategy: merge
+    parameters:
+        - name: username
+          description: Username of the user
+          type: string
+          required: true
+          paramType: path
+    '''
+
+    #feed = manager.get_user_feed(username)
+    feed = manager.get_feeds(username)['flat']
+    print "Feed key: ", feed.key
+    Activity.__table_name__ = "activities"
+    paged = PaginationObject()
+    paged.nextset = nextset
+
+    if nextset is not None and pointer == 'next':
+        uncapped_activities = Activity.filter(feed_id=feed.key).filter(activity_id__lt=nextset)
+    elif nextset is not None and pointer == 'previous':
+        uncapped_activities = Activity.filter(feed_id=feed.key).filter(activity_id__gt=nextset)
+    else:
+        uncapped_activities = Activity.filter(feed_id=feed.key)
+
+
+    # activities = list(feed[:5])
+
+    try:
+        activities = uncapped_activities[:25]
+        a_id = activities[len(activities) - 1].activity_id
+        p_id = activities[0].activity_id
+        itemlist = enrich_custom_activities(activities)
+
+        results = {'itemsperpage': len(activities), 'list': itemlist,
+                   'next': settings.BASE_URL + username + "/activities/next/" + str(a_id),
+                   'previous': settings.BASE_URL + username + "/activities/previous/" + str(p_id)}
+
+        return Response(results, status=status.HTTP_200_OK)
+    except (IndexError) as e:
+        if isinstance(e, exceptions.IndexError):
+            errormsg = dict(error="No activity for the given request parameters for this user could be found")
+            return Response(errormsg, status=status.HTTP_404_NOT_FOUND)
+        return Response("An unknown error occurred", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 # Utility methods
