@@ -43,6 +43,7 @@ INSTALLED_APPS = (
     'feed_engine',
     'django_extensions',
     'rest_framework',
+    'rest_framework_swagger',
     'users',
 
 )
