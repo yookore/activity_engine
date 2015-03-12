@@ -102,11 +102,11 @@ def get_activities(request, username, nextset=None, pointer='next'):
     paged.nextset = nextset
 
     if nextset is not None and pointer == 'next':
-        uncapped_activities = Activity.filter(feed_id=feed.key).filter(activity_id__lt=nextset).order_by('-activity_id')
+        uncapped_activities = Activity.filter(feed_id=feed.key).filter(activity_id__lt=nextset)
     elif nextset is not None and pointer == 'previous':
-        uncapped_activities = Activity.filter(feed_id=feed.key).filter(activity_id__gt=nextset).order_by('-activity_id')
+        uncapped_activities = Activity.filter(feed_id=feed.key).filter(activity_id__gt=nextset)
     else:
-        uncapped_activities = Activity.filter(feed_id=feed.key).order_by('-activity_id')
+        uncapped_activities = Activity.filter(feed_id=feed.key)
 
 
     # activities = list(feed[:5])
@@ -142,11 +142,11 @@ def get_flat_activities(request, username, nextset=None, pointer='next'):
     paged.nextset = nextset
 
     if nextset is not None and pointer == 'next':
-        uncapped_activities = Activity.filter(feed_id=feed.key).filter(activity_id__lt=nextset).order_by('-activity_id')
+        uncapped_activities = Activity.filter(feed_id=feed.key).filter(activity_id__lt=nextset)
     elif nextset is not None and pointer == 'previous':
-        uncapped_activities = Activity.filter(feed_id=feed.key).filter(activity_id__gt=nextset).order_by('-activity_id')
+        uncapped_activities = Activity.filter(feed_id=feed.key).filter(activity_id__gt=nextset)
     else:
-        uncapped_activities = Activity.filter(feed_id=feed.key).order_by('-activity_id')
+        uncapped_activities = Activity.filter(feed_id=feed.key)
 
 
     # activities = list(feed[:5])
