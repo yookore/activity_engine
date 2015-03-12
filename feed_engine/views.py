@@ -5,9 +5,8 @@ from django.conf import settings
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view
 from cassandra.cluster import Cluster
-from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 import time_uuid
 
@@ -81,7 +80,7 @@ def create_activity(request):
             actor = act['author']
             print act["created_at"]
             print actor, activity
-            manager.addactivity_rest(actor=actor,activity=activity)
+            manager.addactivity_rest(actor=actor, activity=activity)
 
             return Response(act, status=status.HTTP_201_CREATED)
         else:
@@ -169,6 +168,7 @@ def get_flat_activities(request, username, nextset=None, pointer='next'):
             return Response(errormsg, status=status.HTTP_404_NOT_FOUND)
         return Response("An unknown error occurred", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
 @api_view(['POST'])
 @csrf_exempt
 def import_updates(request):
@@ -176,14 +176,14 @@ def import_updates(request):
     print s_update
     status_update = StatusUpdate()
     status_update.author = s_update['author']
-    status_update.created_at = datetime.datetime.utcfromtimestamp(long(s_update['created_at'])/1000)
-    status_update.updated_at = datetime.datetime.utcfromtimestamp(long(s_update['updated_at'])/1000)
-    status_update.id = time_uuid.TimeUUID.convert(datetime.datetime.utcfromtimestamp(long(s_update['updated_at'])/1000))
+    status_update.created_at = datetime.datetime.utcfromtimestamp(long(s_update['created_at']) / 1000)
+    status_update.updated_at = datetime.datetime.utcfromtimestamp(long(s_update['updated_at']) / 1000)
+    status_update.id = time_uuid.TimeUUID.convert(
+        datetime.datetime.utcfromtimestamp(long(s_update['updated_at']) / 1000))
     status_update.body = s_update['body']
     status_update.save()
     manager.addactivity(status_update)
     print status_update
-
 
     return Response(s_update, status=status.HTTP_201_CREATED)
 
@@ -204,9 +204,9 @@ def enrich_custom_activities(activities):
         # Build the activity stream object...
         print a
         activity_item = ActivityItemModel()
-        #print content_by_author_stmt, a.actor, a.object
+        # print content_by_author_stmt, a.actor, a.object
         object = session.execute(content_by_author_stmt, [a.actor, a.object])
-        #print type(object)
+        # print type(object)
         if len(object) > 0:
 
             # raise Exception(object)
@@ -244,9 +244,11 @@ def enrich_custom_activities(activities):
             activity_item.object['url'] = settings.BASE_URL + "content/" + actor_object[0].username + "/" + str(
                 content_object[0].id)
             if content_object[0].content_type == 'statusupdate':
-                activity_item.object['comments'] = settings.CONTENT_URL + "status_updates/" + str(content_object[0].id) + "/comments"
+                activity_item.object['comments'] = settings.CONTENT_URL + "status_updates/" + str(
+                    content_object[0].id) + "/comments"
             if content_object[0].content_type == 'blogpost':
-                activity_item.object['comments'] = settings.CONTENT_URL + "blogposts/" + str(content_object[0].id) + "/comments"
+                activity_item.object['comments'] = settings.CONTENT_URL + "blogposts/" + str(
+                    content_object[0].id) + "/comments"
 
             #Updated element
             if content_object[0].updated_at:
@@ -259,7 +261,22 @@ def enrich_custom_activities(activities):
             lc = Comment.filter(object_id=str(content_object[0].id))[:1]
 
             if len(lc) > 0:
-                activity_item.object['latestcomment'] = dict(author=settings.BASE_URL + "users/" + lc[0].author, body=lc[0].body, creationdate=lc[0].created_at)
+                commenter_object = session.execute("Select * from users where username = '" + lc[0].author + "'")
+
+                #for now we assume the author always exists
+                fullname = commenter_object[0].firstname + " " + commenter_object[0].lastname
+                if commenter_object[0].profile is not None:
+                    profile_pic_url = commenter_object.profile.profilepicture
+                    activity_item.object['latestcomment'] = dict(author=settings.BASE_URL + "users/" + lc[0].author,
+                                                                 authorname=fullname, body=lc[0].body,
+                                                                 creationdate=lc[0].created_at,
+                                                                 imageurl=profile_pic_url)
+                else:
+                    activity_item.object['latestcomment'] = dict(author=settings.BASE_URL + "users/" + lc[0].author,
+                                                                 authorname=fullname, body=lc[0].body,
+                                                                 creationdate=lc[0].created_at,
+                    )
+
                 # activity_item.object.latestcomment['body'] = lc[0].body
                 # activity_item.object.latestcomment['created_at'] = lc[0].created_at
                 #Build the comment object.
