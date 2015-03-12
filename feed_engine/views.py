@@ -1,40 +1,29 @@
 import datetime
-import random
-import uuid
+import exceptions
 
 from django.conf import settings
-from django.http import HttpResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
-import exceptions
-from loremipsum import get_sentence
 from rest_framework import status
-from rest_framework.decorators import api_view
-from rest_framework.renderers import JSONRenderer
+from rest_framework.decorators import api_view, permission_classes
 from cassandra.cluster import Cluster
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+import time_uuid
 
 from stream_framework.storage.cassandra.models import Activity
 from stream_framework.verbs import get_verb_by_id
-from feed_engine import StatusUpdate, BlogPost, Relationship
 from feed_engine.feedmanager import manager
-from feed_engine.models import ActivityItemModel, PaginationObject
-from feed_engine.serializers import ActivityModelSerializer
+from feed_engine.models import ActivityItemModel, PaginationObject, StatusUpdate, Comment
+from feed_engine.serializers import ActivityModelSerializer, ActivityRequestSerializer
 
 
 cluster = Cluster(['192.168.10.200', '192.168.10.201', '192.168.10.202'])
 session = cluster.connect('yookore')
 
 # Eventually we need prepared statement for the different types
-a_e_statement = session.prepare("select * from content where author = ? and id = ?")
+content_by_author_stmt = session.prepare("select * from content where author = ? and id = ?")
 followers_statment = session.prepare("select target_user from relationships where user = ?")
-
-
-class JSONResponse(HttpResponse):
-    def __init__(self, data, **kwargs):
-        content = JSONRenderer().render(data)
-        kwargs['content_type'] = 'application/json'
-        super(JSONResponse, self).__init__(content, **kwargs)
 
 
 def home(request):
@@ -42,17 +31,13 @@ def home(request):
 
 
 @api_view(['POST'])
+@csrf_exempt
 def create_activity(request):
-    '''
-
-    Creates an activity item to be fed to user streams
-
-    And I will add some more blah blah blah here
-
-    And it goes on and on
+    """
+    Creates an Activity Item to be sent to user stream
     ---
-    # YAML
-    type: &activity_type
+    #YAML
+    type:
         author:
             required: true
             type: string
@@ -73,50 +58,43 @@ def create_activity(request):
             type: string
 
     parameters:
-    - in: body
-      name: body
-      description: Create an activity to be added to user feeds
-      required: false
-      paramType: body
-      schema:
-        type: *activity_type
-
-
-    '''
+        - in: body
+          name: "ActivityObject"
+          pytype: ActivityRequestSerializer
+          paramType: body
+          description: JSON representation of the activity item
+    """
     if request.method == 'POST':
-        message = request.data
-        print message
-        from stream_framework.activity import Activity
+        serializer = ActivityRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            act = serializer.data
+            from stream_framework.activity import Activity
 
-        activity = Activity(
-            actor=message['author'],
-            object=message['object_id'],
-            object_type=message['object_type'],
-            verb=get_verb_by_id(int(message['verb_id'])),
-            target=message['target_id'],
-            target_type=message['target_type']
-        )
+            activity = Activity(
+                actor=act['author'],
+                object=act['object_id'],
+                object_type=act['object_type'],
+                verb=get_verb_by_id(int(act['verb_id'])),
+                target=act['target_id'],
+                target_type=act['target_type'],
+            )
+            actor = act['author']
+            print act["created_at"]
+            print actor, activity
+            manager.addactivity_rest(actor=actor,activity=activity)
 
-        manager.addactivity_rest(message['author'], activity)
-
-        return Response(message, status=status.HTTP_201_CREATED)
+            return Response(act, status=status.HTTP_201_CREATED)
+        else:
+            print serializer.errors
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['GET'])
 def get_activities(request, username, nextset=None, pointer='next'):
-    '''
-    Gets a timeline of activities for a given Yookos user
+    """
+    Retrieves the timeline for a given username earlier or later than the supplied activity id
 
-    ---
-    parameters_strategy: merge
-    parameters:
-        - name: username
-          description: Username of the user
-          type: string
-          required: true
-          paramType: path
-    '''
-
+    """
     feed = manager.get_user_feed(username)
     # feed = manager.get_feeds(username)['flat']
     print "Feed key: ", feed.key
@@ -125,22 +103,22 @@ def get_activities(request, username, nextset=None, pointer='next'):
     paged.nextset = nextset
 
     if nextset is not None and pointer == 'next':
-        uncapped_activities = Activity.filter(feed_id=feed.key).filter(activity_id__lt=nextset)
+        uncapped_activities = Activity.filter(feed_id=feed.key).filter(activity_id__lt=nextset).order_by('-activity_id')
     elif nextset is not None and pointer == 'previous':
-        uncapped_activities = Activity.filter(feed_id=feed.key).filter(activity_id__gt=nextset)
+        uncapped_activities = Activity.filter(feed_id=feed.key).filter(activity_id__gt=nextset).order_by('-activity_id')
     else:
-        uncapped_activities = Activity.filter(feed_id=feed.key)
+        uncapped_activities = Activity.filter(feed_id=feed.key).order_by('-activity_id')
 
 
     # activities = list(feed[:5])
 
     try:
-        activities = uncapped_activities[:25]
-        a_id = activities[len(activities) - 1].activity_id
-        p_id = activities[0].activity_id
-        itemlist = enrich_custom_activities(activities)
+        timeline = uncapped_activities[:25]
+        a_id = timeline[len(timeline) - 1].activity_id
+        p_id = timeline[0].activity_id
+        itemlist = enrich_custom_activities(timeline)
 
-        results = {'itemsperpage': len(activities), 'list': itemlist,
+        results = {'itemsperpage': len(timeline), 'list': itemlist,
                    'next': settings.BASE_URL + username + "/activities/next/" + str(a_id),
                    'previous': settings.BASE_URL + username + "/activities/previous/" + str(p_id)}
 
@@ -154,20 +132,10 @@ def get_activities(request, username, nextset=None, pointer='next'):
 
 @api_view(['GET'])
 def get_flat_activities(request, username, nextset=None, pointer='next'):
-    '''
-    Gets a timeline of all followed activities for a given Yookos user
+    """
+    Retrieves activities for all user follows (friends and following)
 
-    ---
-    parameters_strategy: merge
-    parameters:
-        - name: username
-          description: Username of the user
-          type: string
-          required: true
-          paramType: path
-    '''
-
-    #feed = manager.get_user_feed(username)
+    """
     feed = manager.get_feeds(username)['flat']
     print "Feed key: ", feed.key
     Activity.__table_name__ = "activities"
@@ -175,11 +143,11 @@ def get_flat_activities(request, username, nextset=None, pointer='next'):
     paged.nextset = nextset
 
     if nextset is not None and pointer == 'next':
-        uncapped_activities = Activity.filter(feed_id=feed.key).filter(activity_id__lt=nextset)
+        uncapped_activities = Activity.filter(feed_id=feed.key).filter(activity_id__lt=nextset).order_by('-activity_id')
     elif nextset is not None and pointer == 'previous':
-        uncapped_activities = Activity.filter(feed_id=feed.key).filter(activity_id__gt=nextset)
+        uncapped_activities = Activity.filter(feed_id=feed.key).filter(activity_id__gt=nextset).order_by('-activity_id')
     else:
-        uncapped_activities = Activity.filter(feed_id=feed.key)
+        uncapped_activities = Activity.filter(feed_id=feed.key).order_by('-activity_id')
 
 
     # activities = list(feed[:5])
@@ -191,8 +159,8 @@ def get_flat_activities(request, username, nextset=None, pointer='next'):
         itemlist = enrich_custom_activities(activities)
 
         results = {'itemsperpage': len(activities), 'list': itemlist,
-                   'next': settings.BASE_URL + username + "/activities/next/" + str(a_id),
-                   'previous': settings.BASE_URL + username + "/activities/previous/" + str(p_id)}
+                   'next': settings.BASE_URL + username + "/activities/flat/next/" + str(a_id),
+                   'previous': settings.BASE_URL + username + "/activities/flat/previous/" + str(p_id)}
 
         return Response(results, status=status.HTTP_200_OK)
     except (IndexError) as e:
@@ -201,8 +169,31 @@ def get_flat_activities(request, username, nextset=None, pointer='next'):
             return Response(errormsg, status=status.HTTP_404_NOT_FOUND)
         return Response("An unknown error occurred", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+@api_view(['POST'])
+@csrf_exempt
+def import_updates(request):
+    s_update = request.data
+    print s_update
+    status_update = StatusUpdate()
+    status_update.author = s_update['author']
+    status_update.created_at = datetime.datetime.utcfromtimestamp(long(s_update['created_at'])/1000)
+    status_update.updated_at = datetime.datetime.utcfromtimestamp(long(s_update['updated_at'])/1000)
+    status_update.id = time_uuid.TimeUUID.convert(datetime.datetime.utcfromtimestamp(long(s_update['updated_at'])/1000))
+    status_update.body = s_update['body']
+    status_update.save()
+    manager.addactivity(status_update)
+    print status_update
 
+
+    return Response(s_update, status=status.HTTP_201_CREATED)
+
+
+#
+#
+#
 # Utility methods
+#
+#
 # _______________________________________________________________________________________________________________________
 def enrich_custom_activities(activities):
     # We need to get the enriched activities for each activity...
@@ -211,20 +202,21 @@ def enrich_custom_activities(activities):
     list = []
     for a in activities:
         # Build the activity stream object...
+        print a
         activity_item = ActivityItemModel()
-        print a_e_statement, a.actor, a.object
-        object = session.execute(a_e_statement, [a.actor, a.object])
-        print type(object)
+        #print content_by_author_stmt, a.actor, a.object
+        object = session.execute(content_by_author_stmt, [a.actor, a.object])
+        #print type(object)
         if len(object) > 0:
 
-            #raise Exception(object)
+            # raise Exception(object)
             activity_item.published = object[0].created_at
 
             actor_object = session.execute("Select * from users where username = '" + a.actor + "'")
 
-            #raise Exception(actor_object)
+            # raise Exception(actor_object)
 
-            #Actor element
+            # Actor element
             activity_item.actor['id'] = actor_object[0].username
             activity_item.actor['displayname'] = actor_object[0].firstname + " " + actor_object[0].lastname
             activity_item.actor['objecttype'] = 'yookos:person'
@@ -251,13 +243,31 @@ def enrich_custom_activities(activities):
             activity_item.object['commentcount'] = content_object[0].comment_count
             activity_item.object['url'] = settings.BASE_URL + "content/" + actor_object[0].username + "/" + str(
                 content_object[0].id)
-
+            if content_object[0].content_type == 'statusupdate':
+                activity_item.object['comments'] = settings.CONTENT_URL + "status_updates/" + str(content_object[0].id) + "/comments"
+            if content_object[0].content_type == 'blogpost':
+                activity_item.object['comments'] = settings.CONTENT_URL + "blogposts/" + str(content_object[0].id) + "/comments"
 
             #Updated element
             if content_object[0].updated_at:
                 activity_item.updated = content_object[0].updated_at
             else:
                 activity_item.updated = content_object[0].created_at
+
+            #This block of code will get the latest comment, if any.
+
+            lc = Comment.filter(object_id=str(content_object[0].id))[:1]
+
+            if len(lc) > 0:
+                activity_item.object['latestcomment'] = dict(author=settings.BASE_URL + "users/" + lc[0].author, body=lc[0].body, creationdate=lc[0].created_at)
+                # activity_item.object.latestcomment['body'] = lc[0].body
+                # activity_item.object.latestcomment['created_at'] = lc[0].created_at
+                #Build the comment object.
+
+                print "Last comment: ", lc[0]
+            else:
+                activity_item.object['latestcomment'] = {}
+                print "No comments"
 
             #Target element coming soon
 
@@ -269,59 +279,3 @@ def enrich_custom_activities(activities):
     print "Elapsed time: ", elapsed_time
 
     return list
-
-
-# @api_view(['GET'])
-# def generate_activities(request, username):
-#     '''
-#     Lets generate mock activities for the activity stream
-#     :param request:
-#     :return: Plain text message
-#     '''
-#
-#     q = Relationship.objects.filter(user=username)
-#     ids = []
-#     for rel in q:
-#         print rel.target_user
-#         ids.append(rel.target_user)
-#     print ids
-#
-#     # result = session.execute(followers_statment, [username])
-#     # print(result)
-#
-#     counter = 0
-#     usernames = ['jomski2009', 'lisanoritha', 'steveolowoyeye', 'Tomisin_fashina', 'ptchankue']
-#     while counter < 15:
-#         number = random.randint(1, 2)
-#
-#         if number == 1:
-#             status_update = StatusUpdate()
-#             status_update.author = username
-#             status_update.text = get_sentence()
-#             status_update.location = 'Randburg'
-#             status_update.comment_count = random.randint(1, 999)
-#             status_update.view_count = random.randint(1, 999)
-#             status_update.like_count = random.randint(1, 999)
-#             status_update.id = uuid.uuid1()
-#
-#             status_update.save()
-#             print status_update
-#             manager.addactivity(status_update)
-#
-#         if number == 2:
-#             blogpost = BlogPost()
-#             blogpost.author = username
-#             blogpost.title = get_sentence()
-#             blogpost.text = get_sentence()
-#             blogpost.comment_count = random.randint(1, 10000)
-#             blogpost.view_count = random.randint(1, 999)
-#             blogpost.like_count = random.randint(1, 999)
-#             blogpost.id = uuid.uuid1()
-#
-#             blogpost.save()
-#             print blogpost
-#             manager.addactivity(blogpost)
-#
-#         counter += 1
-#
-#     return Response("Generating activities", status=status.HTTP_201_CREATED)

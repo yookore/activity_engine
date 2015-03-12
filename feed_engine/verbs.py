@@ -1,6 +1,10 @@
 from stream_framework.verbs import register
 from stream_framework.verbs.base import Verb
 
+class CreateVerb(Verb):
+    id = 9
+    infinitive = 'create'
+    past_tense = 'created'
 
 class PostVerb(Verb):
     id = 10
@@ -20,4 +24,5 @@ class ViewVerb(Verb):
 register(PostVerb)
 register(LikeVerb)
 register(ViewVerb)
+register(CreateVerb)
 

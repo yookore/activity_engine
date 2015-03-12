@@ -40,6 +40,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'cqlengine',
+    'corsheaders',
     'stream_framework',
     'feed_engine',
     'django_extensions',
@@ -60,6 +61,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
 )
 
 MIDDLEWARE_CLASSES = (
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -136,3 +138,64 @@ TEMPLATE_DIRS = (
 BROKER_URL = 'amqp://guest:Wordpass15@192.168.2.229:5672//'
 
 BASE_URL = "http://localhost:8000/"
+
+CONTENT_URL = "http://192.168.10.123:8000/api/"
+
+
+SWAGGER_SETTINGS = {
+    'exclude_namespaces': [],
+    'api_version': '0.1',
+    'api_path': '/',
+    'enabled_methods': [
+        'get',
+        'post',
+        'put',
+        'patch',
+        'delete'
+    ],
+    'is_authenticated': False,
+    'is_superuser': False,
+    'permission_denied_handler': None,
+    'info': {
+        'contact': 'yookore@gmail.com',
+        'description': 'This is the POC Activity Engine Server for Yookore. ',
+        'licenseUrl': 'http://www.apache.org/licenses/LICENSE-2.0.html',
+        'title': 'Yookore Activity Engine',
+    },
+    'doc_expansion': 'none',
+}
+
+APPEND_SLASH = False
+
+CORS_ORIGIN_ALLOW_ALL = True
+
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_REPLACE_HTTPS_REFERER = False
+
+CORS_ORIGIN_WHITELIST = (
+    # '192.168.2.12:9000',
+    # '192.168.2.12',
+    # 'localhost:9000',
+    # 'hostname.example.com'
+)
+CORS_ALLOW_METHODS = (
+        'GET',
+        'POST',
+        'PUT',
+        'PATCH',
+        'DELETE',
+        'OPTIONS'
+)
+
+
+
+CORS_ALLOW_HEADERS = (
+        'x-requested-with',
+        'content-type',
+        'accept',
+        'origin',
+        'authorization',
+        'x-csrftoken'
+    )
+CORS_PREFLIGHT_MAX_AGE = 86400 # 24 hours

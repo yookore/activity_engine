@@ -22,3 +22,5 @@ PyYAML
 redis
 six
 thrift
+markdown
+django-cors-headers

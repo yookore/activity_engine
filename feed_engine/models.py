@@ -1,10 +1,9 @@
 from uuid import uuid1, uuid4
+import datetime
+
 from cqlengine import Model
 from cqlengine import columns
-import datetime
-from django.db import models
-from django.utils.timezone import make_naive
-import pytz
+
 from stream_framework.activity import Activity
 from feed_engine.verbs import PostVerb
 
@@ -13,7 +12,9 @@ class Profile(object):
     """
     Model for the user defined type of profile.
     """
-    def __int__(self, birthdate, gender, title, relationshipstatus, homecountry, currentcountry, timezone, profilepicture, alternate_email, religion, interests, cellphone, biography ):
+
+    def __int__(self, birthdate, gender, title, relationshipstatus, homecountry, currentcountry, timezone,
+                profilepicture, alternate_email, religion, interests, cellphone, biography):
         self.birthdate = birthdate
         self.gender = gender
         self.title = title
@@ -35,7 +36,7 @@ class User(Model):
     """
     Model for the User. Will be using this as the auth model.
     """
-    username =columns.Text(primary_key=True)
+    username = columns.Text(primary_key=True)
     jiveuserid = columns.Integer(partition_key=True)
     creationdate = columns.DateTime()
     email = columns.Text()
@@ -43,7 +44,7 @@ class User(Model):
     firstname = columns.Text()
     lastloggedin = columns.DateTime()
     lastname = columns.Text()
-    lastprofileupdate =columns.DateTime()
+    lastprofileupdate = columns.DateTime()
     password = columns.Text()
     userid = columns.UUID(default=uuid4())
 
@@ -54,15 +55,19 @@ class Relationship(Model):
     target_user = columns.Text(primary_key=True)
     relationship_id = columns.UUID(default=uuid4())
     creationdate = columns.DateTime(default=datetime.datetime.now())
-    status = columns.Text() #active, pending, retired, deleted
-    type = columns.Text() #following, friend
+    status = columns.Text()  # active, pending, retired, deleted
+    type = columns.Text()  # following, friend
+
 
 class Comment(Model):
-    __table_name__ = "comments"
-    id = columns.TimeUUID(primary_key=uuid1())
-    text = columns.Text()
-    author = columns.Text()
-
+    object_id       = columns.UUID(primary_key = True)
+    id              = columns.TimeUUID(primary_key = True, default=uuid1, clustering_order="desc")
+    author          = columns.Text(primary_key=True)
+    created_at      = columns.DateTime(default=datetime.datetime.now())
+    updated_at      = columns.DateTime()
+    view_count      = columns.Integer(default=0)
+    like_count      = columns.Integer(default=0)
+    body	        = columns.Text()
 
 class Content(Model):
     """
@@ -71,7 +76,7 @@ class Content(Model):
     """
     __table_name__ = 'content'
     author = columns.Text(primary_key=True)
-    id = columns.TimeUUID(primary_key=True, default=uuid1(), clustering_order="desc") #content id
+    id = columns.TimeUUID(primary_key=True, default=uuid1(), clustering_order="desc")  # content id
     content_type = columns.Text(polymorphic_key=True, index=True)
     created_at = columns.DateTime(default=datetime.datetime.now())
     tags = columns.List(value_type=columns.Text())
@@ -79,6 +84,7 @@ class Content(Model):
     like_count = columns.Integer()
     comment_count = columns.Integer()
     updated_at = columns.DateTime(default=datetime.datetime.now())
+
 
 class StatusUpdate(Content):
     __polymorphic_key__ = "statusupdate"
@@ -90,7 +96,7 @@ class StatusUpdate(Content):
         return str(self.__polymorphic_key__)
 
     def __str__(self):
-        return "StatusUpdate: { " + self.author + ": " + self.body + " }"
+        return "StatusUpdate: { " + str(self.id) + " : " + self.author + ": " + self.body + " }"
 
     @property
     def create_activity(self):
@@ -98,13 +104,14 @@ class StatusUpdate(Content):
             actor=self.author,
             verb=PostVerb,
             object=self.id,
-            object_type = self.get_object_type(),
+            object_type=self.get_object_type(),
             target=None,
-            target_type = None,
-            time = self.created_at
+            target_type=None,
+            time=self.created_at
         )
 
         return activity
+
 
 class BlogPost(Content):
     __polymorphic_key__ = "blogpost"
@@ -118,10 +125,10 @@ class BlogPost(Content):
             actor=self.author,
             verb=PostVerb,
             object=self.id,
-            object_type = self.__polymorphic_key__,
+            object_type=self.__polymorphic_key__,
             target=None,
-            target_type = None,
-            time = self.created_at,
+            target_type=None,
+            time=self.created_at,
         )
 
         return activity
@@ -139,11 +146,13 @@ class Photo(Content):
     def create_activity(self):
         pass
 
+
 class Video(Content):
     __polymorphic_key__ = "video"
 
     def create_activity(self):
         pass
+
 
 class Audio(Content):
     __polymorphic_key__ = "audio"
@@ -154,14 +163,24 @@ class Audio(Content):
 
 
 class ActivityItemModel(object):
-    published = "" #datetime.isofromat
-    actor = {} #actor dictionary object
-    verb = "" #string
-    object = {} #object dictionary
-    target = {} #dictionary
+    published = ""  # datetime.isofromat
+    actor = {}  # actor dictionary object
+    verb = ""  # string
+    object = {}  # object dictionary
+    target = {}  # dictionary
     title = ""
     content = {}
     updated = ""
+
+
+class ActivityModelJson(object):
+    actor = ""
+    object = ""
+    object_type = ""
+    verb = 0
+    target = ""
+    target_type = ""
+
 
 class PaginationObject(object):
     nextset = uuid1()

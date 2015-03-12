@@ -8,6 +8,15 @@ class ActorSerializer(serializers.Serializer):
     lastprofileupdate = serializers.DateTimeField()
     url = serializers.CharField()
 
+class LatestCommentSerializer(serializers.Serializer):
+    author = serializers.CharField(allow_null=True)
+    object_id = serializers.UUIDField()
+    id = serializers.UUIDField()
+    created_at = serializers.DateTimeField()
+    updated_at = serializers.DateTimeField()
+    body = serializers.CharField()
+
+
 class ObjectSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     type = serializers.CharField()
@@ -15,9 +24,11 @@ class ObjectSerializer(serializers.Serializer):
     text = serializers.CharField(required=False)
     likes = serializers.IntegerField(required=False)
     views = serializers.IntegerField(required=False)
-    comments = serializers.IntegerField(required=False)
+    comments = serializers.CharField()
+    commentcount = serializers.IntegerField()
     publishdate = serializers.DateTimeField()
     url = serializers.CharField(required=False)
+    latestcomment = serializers.DictField(required=False)
 
 class ActivityModelSerializer(serializers.Serializer):
     published = serializers.DateTimeField()
@@ -25,6 +36,15 @@ class ActivityModelSerializer(serializers.Serializer):
     verb  = serializers.CharField()
     object = ObjectSerializer()
     updated = serializers.DateTimeField()
+
+class ActivityRequestSerializer(serializers.Serializer):
+    author = serializers.CharField(required=True)
+    verb_id = serializers.CharField(required=True)
+    object_id = serializers.CharField(required=True)
+    object_type = serializers.CharField(required=True)
+    target_id = serializers.CharField(required=False, allow_blank=True)
+    target_type = serializers.CharField(required=False, allow_blank=True)
+    created_at = serializers.DateTimeField(required=False)
 
 class PaginationObjectSerializer(serializers.Serializer):
     next = serializers.UUIDField()
