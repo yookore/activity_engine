@@ -67,20 +67,20 @@ def create_activity(request):
         serializer = ActivityRequestSerializer(data=request.data)
         if serializer.is_valid():
             act = serializer.data
-            from stream_framework.activity import Activity
-
-            activity = Activity(
-                actor=act['author'],
-                object=act['object_id'],
-                object_type=act['object_type'],
-                verb=get_verb_by_id(int(act['verb_id'])),
-                target=act['target_id'],
-                target_type=act['target_type'],
-            )
-            actor = act['author']
-            print act["created_at"]
-            print actor, activity
-            manager.addactivity_rest(actor=actor, activity=activity)
+            if act['verb_id'] != '12':
+                from stream_framework.activity import Activity
+                activity = Activity(
+                    actor=act['author'],
+                    object=act['object_id'],
+                    object_type=act['object_type'],
+                    verb=get_verb_by_id(int(act['verb_id'])),
+                    target=act['target_id'],
+                    target_type=act['target_type'],
+                )
+                actor = act['author']
+                print act["created_at"]
+                print actor, activity
+                manager.addactivity_rest(actor=actor, activity=activity)
 
             return Response(act, status=status.HTTP_201_CREATED)
         else:
@@ -164,7 +164,7 @@ def get_flat_activities(request, username, nextset=None, pointer='next'):
         return Response(results, status=status.HTTP_200_OK)
     except (IndexError) as e:
         if isinstance(e, exceptions.IndexError):
-            errormsg = dict(error="No activity for the given request parameters for this user could be found")
+            errormsg = dict(error=e.message)
             return Response(errormsg, status=status.HTTP_404_NOT_FOUND)
         return Response("An unknown error occurred", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -263,25 +263,28 @@ def enrich_custom_activities(activities):
             if len(lc) > 0:
                 commenter_object = session.execute("Select * from users where username = '" + lc[0].author + "'")
 
-                #for now we assume the author always exists
-                fullname = commenter_object[0].firstname + " " + commenter_object[0].lastname
-                if commenter_object[0].profile is not None:
-                    profile_pic_url = commenter_object.profile.profilepicture
-                    activity_item.object['latestcomment'] = dict(author=settings.BASE_URL + "users/" + lc[0].author,
-                                                                 authorname=fullname, body=lc[0].body,
-                                                                 creationdate=lc[0].created_at,
-                                                                 imageurl=profile_pic_url)
+                if len(commenter_object) > 0:
+                    #for now we assume the author always exists
+                    fullname = commenter_object[0].firstname + " " + commenter_object[0].lastname
+                    if commenter_object[0].profile is not None:
+                        profile_pic_url = commenter_object.profile.profilepicture
+                        activity_item.object['latestcomment'] = dict(author=settings.BASE_URL + "users/" + lc[0].author,
+                                                                     authorname=fullname, body=lc[0].body,
+                                                                     creationdate=lc[0].created_at,
+                                                                     imageurl=profile_pic_url)
+                    else:
+                        activity_item.object['latestcomment'] = dict(author=settings.BASE_URL + "users/" + lc[0].author,
+                                                                     authorname=fullname, body=lc[0].body,
+                                                                     creationdate=lc[0].created_at,
+                        )
+
+                    # activity_item.object.latestcomment['body'] = lc[0].body
+                    # activity_item.object.latestcomment['created_at'] = lc[0].created_at
+                    #Build the comment object.
+
+                    print "Last comment: ", lc[0]
                 else:
-                    activity_item.object['latestcomment'] = dict(author=settings.BASE_URL + "users/" + lc[0].author,
-                                                                 authorname=fullname, body=lc[0].body,
-                                                                 creationdate=lc[0].created_at,
-                    )
-
-                # activity_item.object.latestcomment['body'] = lc[0].body
-                # activity_item.object.latestcomment['created_at'] = lc[0].created_at
-                #Build the comment object.
-
-                print "Last comment: ", lc[0]
+                    activity_item.object['latestcomment'] = {}
             else:
                 activity_item.object['latestcomment'] = {}
                 print "No comments"
