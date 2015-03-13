@@ -243,13 +243,14 @@ def enrich_custom_activities(activities):
             activity_item.object['commentcount'] = content_object[0].comment_count
             activity_item.object['url'] = settings.BASE_URL + "content/" + actor_object[0].username + "/" + str(
                 content_object[0].id)
-            if content_object[0].content_type == 'statusupdate':
-                activity_item.object['comments'] = settings.CONTENT_URL + "status_updates/" + str(
-                    content_object[0].id) + "/comments"
-            if content_object[0].content_type == 'blogpost':
-                activity_item.object['comments'] = settings.CONTENT_URL + "blogposts/" + str(
-                    content_object[0].id) + "/comments"
-
+            # if content_object[0].content_type == 'statusupdate':
+            #     activity_item.object['comments'] = settings.CONTENT_URL + "status_updates/" + str(
+            #         content_object[0].id) + "/comments"
+            # if content_object[0].content_type == 'blogpost':
+            #     activity_item.object['comments'] = settings.CONTENT_URL + "blogposts/" + str(
+            #         content_object[0].id) + "/comments"
+            activity_item.object['comments'] = settings.CONTENT_URL + "content/" + str(
+                    content_object[0].id) + "/comments/"
             #Updated element
             if content_object[0].updated_at:
                 activity_item.updated = content_object[0].updated_at
