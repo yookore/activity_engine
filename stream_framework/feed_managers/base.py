@@ -298,6 +298,7 @@ class Manager(object):
         :param operation_kwargs: kwargs passed to the operation
         :param fanout_priority: the priority set to this fanout
         '''
+        print ("Starting fanout tasks..........")
         fanout_task = self.get_fanout_task(
             fanout_priority, feed_class=feed_class)
         if not fanout_task:

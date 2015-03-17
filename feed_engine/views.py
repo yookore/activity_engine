@@ -10,7 +10,7 @@ from cassandra.cluster import Cluster
 from rest_framework.response import Response
 import time_uuid
 
-from stream_framework.storage.cassandra.models import Activity
+from stream_framework.storage.cassandra.models import Activity, AggregatedActivity
 from stream_framework.verbs import get_verb_by_id
 from feed_engine.feedmanager import manager
 from feed_engine.models import ActivityItemModel, PaginationObject, StatusUpdate, Comment
@@ -81,6 +81,8 @@ def create_activity(request):
                 print act["created_at"]
                 print actor, activity
                 manager.addactivity_rest(actor=actor, activity=activity)
+            else:
+                return Response("Not adding views as activities", status=status.HTTP_400_BAD_REQUEST)
 
             return Response(act, status=status.HTTP_201_CREATED)
         else:
@@ -152,6 +154,9 @@ def get_flat_activities(request, username, nextset=None, pointer='next'):
     # activities = list(feed[:5])
 
     try:
+        # How do I get unique activities and stuff the most recent
+        # activity in the object
+
         activities = uncapped_activities[:25]
         a_id = activities[len(activities) - 1].activity_id
         p_id = activities[0].activity_id
@@ -167,6 +172,19 @@ def get_flat_activities(request, username, nextset=None, pointer='next'):
             errormsg = dict(error=e.message)
             return Response(errormsg, status=status.HTTP_404_NOT_FOUND)
         return Response("An unknown error occurred", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+@api_view(['GET'])
+def get_aggregated_feed(request, username='ajibola'):
+    username = 'jomski2009'
+    feed = manager.get_feeds(username)['aggregated']
+    activities = feed[:10]
+
+    for activity in activities:
+        print activity.activities[:1]
+
+    return Response("Done", status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
@@ -204,17 +222,17 @@ def enrich_custom_activities(activities):
         # Build the activity stream object...
         print a
         activity_item = ActivityItemModel()
-        # print content_by_author_stmt, a.actor, a.object
+        print content_by_author_stmt, a.actor, a.object
         object = session.execute(content_by_author_stmt, [a.actor, a.object])
-        # print type(object)
+        print type(object)
+
         if len(object) > 0:
 
-            # raise Exception(object)
             activity_item.published = object[0].created_at
 
             actor_object = session.execute("Select * from users where username = '" + a.actor + "'")
 
-            # raise Exception(actor_object)
+            #raise Exception(actor_object)
 
             # Actor element
             activity_item.actor['id'] = actor_object[0].username
@@ -229,7 +247,8 @@ def enrich_custom_activities(activities):
 
             content_object = session.execute(
                 "Select * from content where author = '" + a.actor + "' and  id = " + str(a.object))
-            #raise Exception(content_object)
+            raise Exception(content_object)
+
             #object element
             activity_item.object['id'] = content_object[0].id
             activity_item.object['type'] = content_object[0].content_type

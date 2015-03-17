@@ -1,3 +1,4 @@
+from stream_framework.feeds.aggregated_feed.cassandra import CassandraAggregatedFeed
 from stream_framework.feeds.cassandra import CassandraFeed
 
 
@@ -11,3 +12,7 @@ class UserFeed(FlatFeed):
 
 class NotificationFeed(FlatFeed):
     key_format = "notification:feed:%(user_id)s"
+
+class YookoreAggregatedFeed(CassandraAggregatedFeed):
+    key_format = "aggregated:feed:%(user_id)s"
+    timeline_cf_name = "aggregated"

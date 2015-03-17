@@ -49,3 +49,6 @@ class ActivityRequestSerializer(serializers.Serializer):
 class PaginationObjectSerializer(serializers.Serializer):
     next = serializers.UUIDField()
     previous = serializers.UUIDField()
+
+class UserProfileRequestSerializer(serializers.Serializer):
+    username = serializers.CharField(required=True)

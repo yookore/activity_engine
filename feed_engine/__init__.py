@@ -6,11 +6,14 @@ from feed_engine.models import Photo, BlogPost, StatusUpdate, Video, User, Relat
 
 # print "Syncing tables ..."
 #
+from users.models import UserProfile
+
 setup(['192.168.10.200', '192.168.10.201', '192.168.10.202'], "yookore")
 sync_table(Photo)
 sync_table(BlogPost)
 sync_table(StatusUpdate)
 sync_table(Video)
-# sync_table(User)
-# sync_table(Relationship)
+sync_table(User)
+sync_table(Relationship)
 sync_table(Comment)
+sync_table(UserProfile)

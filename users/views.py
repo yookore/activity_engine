@@ -9,6 +9,8 @@ from feed_engine.models import Content, PaginationObject
 from feed_engine.views import enrich_custom_activities
 from stream_framework.activity import Activity
 import exceptions
+from users.models import UserProfile
+
 
 @api_view(['GET'])
 def get_user(request, username):
@@ -31,37 +33,22 @@ def get_content(request, content_id, username): #This will have to change as we 
     return Response(content, status=status.HTTP_200_OK)
 
 
-@api_view(['GET'])
-def get_timeline(request, username, nextset=None, pointer='next'):
-    feed = manager.get_user_feed(username)
-    print "Feed key: ", feed.key
-    Activity.__table_name__ = "activities"
-    paged = PaginationObject()
-    paged.nextset = nextset
+@api_view(['POST'])
+def getuserprofile(request):
 
-    if nextset is not None and pointer == 'next':
-        uncapped_activities = Activity.filter(feed_id=feed.key).filter(activity_id__lt=nextset)
-    elif nextset is not None and pointer == 'previous':
-        uncapped_activities = Activity.filter(feed_id=feed.key).filter(activity_id__gt=nextset)
-    else:
-        uncapped_activities = Activity.filter(feed_id=feed.key)
+    data = request.data
+    print data
+    #We need the basic user data
+    user = User.objects.get(username=data['username'])
 
+    #We also need the user profile data
+    userprofile = UserProfile.objects.get(username=data['username'])
 
-    # activities = list(feed[:5])
-
-    try:
-        timeline = uncapped_activities[:25]
-        a_id = timeline[len(timeline) - 1].activity_id
-        p_id = timeline[0].activity_id
-        itemlist = enrich_custom_activities(timeline)
-
-        results = {'itemsperpage': len(timeline), 'list': itemlist,
-                   'next': settings.BASE_URL + username + "/timeline/next/" + str(a_id),
-                   'previous': settings.BASE_URL + username + "/timeline/previous/" + str(p_id)}
-
-        return Response(results, status=status.HTTP_200_OK)
-    except (IndexError) as e:
-        if isinstance(e, exceptions.IndexError):
-            errormsg = dict(error="No activity for the given request parameters for this user could be found")
-            return Response(errormsg, status=status.HTTP_404_NOT_FOUND)
-        return Response("An unknown error occurred", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    #Update the user profile data with user data
+    # userprofile.firstname = user.firstname
+    # userprofile.lastname = user.lastname
+    # userprofile.email = user.email
+    # userprofile.lastupdated = user.lastprofileupdate
+    #userprofile.save()
+    combo = dict(userdata=user, profiledata=userprofile)
+    return Response(combo, status=status.HTTP_200_OK)

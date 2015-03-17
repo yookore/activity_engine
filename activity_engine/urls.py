@@ -28,5 +28,6 @@ urlpatterns = patterns('',
                            name='get_content'),
                        url(r'^docs/', include('rest_framework_swagger.urls')),
                        url(r'^data-import$', 'feed_engine.views.import_updates'),
+                       url(r'^data-test$', 'feed_engine.views.get_aggregated_feed'),
 )
 

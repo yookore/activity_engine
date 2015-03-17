@@ -1,5 +1,5 @@
 from stream_framework.activity import AggregatedActivity
-from stream_framework.aggregators.base import RecentVerbAggregator
+from stream_framework.aggregators.base import RecentVerbAggregator, ObjectBasedAggregator
 from stream_framework.feeds.base import BaseFeed
 from stream_framework.serializers.aggregated_activity_serializer import \
     AggregatedActivitySerializer
@@ -47,13 +47,14 @@ class AggregatedFeed(BaseFeed):
     '''
     # : The class to use for aggregating activities into aggregated activities
     # : also see :class:`.BaseAggregator`
-    aggregator_class = RecentVerbAggregator
+    #aggregator_class = RecentVerbAggregator
+    aggregator_class = ObjectBasedAggregator
 
     # : The class to use for storing the aggregated activity
     aggregated_activity_class = AggregatedActivity
     # : the number of aggregated items to search to see if we match
     # : or create a new aggregated activity
-    merge_max_length = 20
+    merge_max_length = 40
 
     # : we use a different timeline serializer for aggregated activities
     timeline_serializer = AggregatedActivitySerializer

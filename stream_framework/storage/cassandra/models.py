@@ -39,8 +39,11 @@ class Activity(BaseActivity):
     verb = columns.Integer(required=True)
 
 
-class AggregatedActivity(BaseActivity):
+class AggregatedActivity(Model):
+    __table_name__ = "aggregated"
+    feed_id = columns.Ascii(primary_key=True, partition_key=True)
+    group = columns.Ascii(primary_key=True, partition_key=True)
+    updated_at = columns.DateTime(primary_key=True, clustering_order='desc')
+    activity_id = columns.TimeUUID(required=True)
     activities = columns.Bytes(required=False)
     created_at = columns.DateTime(required=False)
-    group = columns.Ascii(required=False)
-    updated_at = columns.DateTime(required=False)

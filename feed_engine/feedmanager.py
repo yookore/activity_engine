@@ -1,6 +1,6 @@
 from stream_framework.feed_managers.base import Manager, FanoutPriority
 from feed_engine import Relationship
-from feed_engine.feeds import UserFeed, FlatFeed, NotificationFeed
+from feed_engine.feeds import UserFeed, FlatFeed, NotificationFeed, YookoreAggregatedFeed
 
 
 class FeedManager(Manager):
@@ -9,6 +9,7 @@ class FeedManager(Manager):
     feed_classes = dict(
         flat=FlatFeed,
         notification=NotificationFeed,
+        #aggregated=YookoreAggregatedFeed,
     )
 
     def get_user_follower_ids(self, user_id):
@@ -29,6 +30,7 @@ class FeedManager(Manager):
         self.add_user_activity(content.author, activity)
 
     def addactivity_rest(self, actor, activity):
+        print ("Adding activity...")
         self.add_user_activity(actor, activity)
 
 manager = FeedManager()

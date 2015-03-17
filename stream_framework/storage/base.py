@@ -91,6 +91,8 @@ class BaseStorage(object):
 
         :returns str: the serialized activity
         '''
+
+
         serialized_activity = self.serializer.dumps(activity)
         return serialized_activity
 

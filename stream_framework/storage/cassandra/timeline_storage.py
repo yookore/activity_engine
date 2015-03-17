@@ -52,7 +52,7 @@ class CassandraTimelineStorage(BaseTimelineStorage):
     setup_connection()
 
     default_serializer_class = CassandraActivitySerializer
-    insert_batch_size = 100
+    insert_batch_size = 500
 
     def __init__(self, serializer_class=None, modelClass=models.Activity, **options):
         self.column_family_name = options.pop('column_family_name')

@@ -146,3 +146,24 @@ class RecentVerbAggregator(BaseAggregator):
         date = activity.time.date()
         group = '%s-%s' % (verb, date)
         return group
+
+class ObjectBasedAggregator(BaseAggregator):
+    '''
+    Aggregates based on the object id
+    '''
+
+    def get_group(self, activity):
+        '''
+        Returns a group based on the object id
+        '''
+        object = activity.object_id
+        group = "{}".format(object)
+        return group
+
+    def rank(self, aggregated_activities):
+        '''
+        The ranking logic, for sorting aggregated activities
+        '''
+        aggregated_activities.sort(key=lambda a: a.updated_at, reverse=True)
+        return aggregated_activities
+
