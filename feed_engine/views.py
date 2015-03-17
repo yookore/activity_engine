@@ -247,7 +247,7 @@ def enrich_custom_activities(activities):
 
             content_object = session.execute(
                 "Select * from content where author = '" + a.actor + "' and  id = " + str(a.object))
-            raise Exception(content_object)
+            #raise Exception(content_object)
 
             #object element
             activity_item.object['id'] = content_object[0].id
@@ -285,7 +285,9 @@ def enrich_custom_activities(activities):
 
                 if len(commenter_object) > 0:
                     #for now we assume the author always exists
+
                     fullname = commenter_object[0].firstname + " " + commenter_object[0].lastname
+                    """
                     if commenter_object[0].profile is not None:
                         profile_pic_url = commenter_object.profile.profilepicture
                         activity_item.object['latestcomment'] = dict(author=settings.BASE_URL + "users/" + lc[0].author,
@@ -293,7 +295,8 @@ def enrich_custom_activities(activities):
                                                                      creationdate=lc[0].created_at,
                                                                      imageurl=profile_pic_url)
                     else:
-                        activity_item.object['latestcomment'] = dict(author=settings.BASE_URL + "users/" + lc[0].author,
+                    """
+                    activity_item.object['latestcomment'] = dict(author=settings.BASE_URL + "users/" + lc[0].author,
                                                                      authorname=fullname, body=lc[0].body,
                                                                      creationdate=lc[0].created_at,
                         )
