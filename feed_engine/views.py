@@ -260,6 +260,10 @@ def enrich_custom_activities(activities):
             activity_item.object['likes'] = content_object[0].like_count
             activity_item.object['views'] = content_object[0].view_count
             activity_item.object['commentcount'] = content_object[0].comment_count
+            # adding the blob, if it exits, in the payload
+            if content_object[0].img:
+                activity_item.object['img'] = content_object[0].img
+                
             activity_item.object['url'] = settings.BASE_URL + "content/" + actor_object[0].username + "/" + str(
                 content_object[0].id)
             # if content_object[0].content_type == 'statusupdate':
