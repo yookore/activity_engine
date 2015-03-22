@@ -246,6 +246,7 @@ class ActivityItemModel(object):
     object = {}  # object dictionary
     target = {}  # dictionary
     title = ""
+    img = ""     # added to get the blob (image)
     content = {}
     updated = ""
 

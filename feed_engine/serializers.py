@@ -7,6 +7,7 @@ class ActorSerializer(serializers.Serializer):
     creationdate = serializers.DateTimeField()
     lastprofileupdate = serializers.DateTimeField()
     url = serializers.CharField()
+    imageurl = serializers.CharField()
 
 class LatestCommentSerializer(serializers.Serializer):
     author = serializers.CharField(allow_null=True)
@@ -29,6 +30,12 @@ class ObjectSerializer(serializers.Serializer):
     publishdate = serializers.DateTimeField()
     url = serializers.CharField(required=False)
     latestcomment = serializers.DictField(required=False)
+    img = serializers.CharField(required=False)
+    url_original = serializers.CharField(required=False)
+    # Emile - audio feature additions
+    filename = serializers.CharField(required=False)
+    caption = serializers.CharField(required=False)
+    # END - audio feature additions
 
 class ActivityModelSerializer(serializers.Serializer):
     published = serializers.DateTimeField()

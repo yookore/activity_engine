@@ -232,6 +232,8 @@ def enrich_custom_activities(activities):
 
             actor_object = session.execute("Select * from users where username = '" + a.actor + "'")
 
+            profile_object = session.execute("Select * from userprofile where username = '" + a.actor + "'")
+
             #raise Exception(actor_object)
 
             # Actor element
@@ -240,7 +242,17 @@ def enrich_custom_activities(activities):
             activity_item.actor['objecttype'] = 'yookos:person'
             activity_item.actor['creationdate'] = actor_object[0].creationdate
             activity_item.actor['lastprofileupdate'] = actor_object[0].lastprofileupdate
-            activity_item.actor['url'] = settings.BASE_URL + "users/" + actor_object[0].username
+            #activity_item.actor['url'] = settings.BASE_URL + "users/" + actor_object[0].username
+
+            # Patrick - providing link to user profile and profile picture
+            activity_item.actor['url'] = "auth/profile/" + actor_object[0].username
+            # providing a link to the profile picture
+            if len (profile_object)>0 and profile_object[0].imageurl:
+                activity_item.actor['imageurl'] = profile_object[0].imageurl
+            else:
+                activity_item.actor['imageurl'] = ''
+
+            # END - providing link to user profile and profile picture
 
             #verb element
             activity_item.verb = (get_verb_by_id(a.verb)).past_tense
@@ -260,12 +272,28 @@ def enrich_custom_activities(activities):
             activity_item.object['likes'] = content_object[0].like_count
             activity_item.object['views'] = content_object[0].view_count
             activity_item.object['commentcount'] = content_object[0].comment_count
-            # adding the blob, if it exits, in the payload
-            if content_object[0].img:
-                activity_item.object['img'] = content_object[0].img
-                
-            activity_item.object['url'] = settings.BASE_URL + "content/" + actor_object[0].username + "/" + str(
-                content_object[0].id)
+            # Patrick - adding images to the feed
+            if content_object[0].uri_image:
+                activity_item.object['img'] ='http://192.168.10.123:8000/api/images/'+ str(content_object[0].uri_image[0])+'/'
+            else:
+                activity_item.object['img'] =''
+            if content_object[0].content_type == 'photo' and content_object[0].data:
+                activity_item.object['img'] ='http://192.168.10.123:8000/api/images/'+ str(content_object[0].id)+'/'
+            if content_object[0].url_original:
+                activity_item.object['url_original'] = str(content_object[0].url_original)
+            else:
+                activity_item.object['url_original'] = ''
+            # END - adding images to the feed
+
+            # Emile - audio feature additions
+            if content_object[0].content_type == "audio":
+                activity_item.object['filename'] = str(content_object[0].filename)
+                activity_item.object['caption'] = str(content_object[0].caption)
+            # END - audio feature additions
+
+            '''activity_item.object['url'] = settings.BASE_URL + "api/content/" + actor_object[0].username + "/" + str(
+                content_object[0].id)'''
+            activity_item.object['url'] = "api/content/" + str(content_object[0].id) + '/'
             # if content_object[0].content_type == 'statusupdate':
             #     activity_item.object['comments'] = settings.CONTENT_URL + "status_updates/" + str(
             #         content_object[0].id) + "/comments"
@@ -287,6 +315,9 @@ def enrich_custom_activities(activities):
             if len(lc) > 0:
                 commenter_object = session.execute("Select * from users where username = '" + lc[0].author + "'")
 
+                commenter_profile_object = session.execute("Select * from userprofile where username = '" + lc[0].author + "'")
+
+
                 if len(commenter_object) > 0:
                     #for now we assume the author always exists
 
@@ -300,7 +331,15 @@ def enrich_custom_activities(activities):
                                                                      imageurl=profile_pic_url)
                     else:
                     """
-                    activity_item.object['latestcomment'] = dict(author=settings.BASE_URL + "users/" + lc[0].author,
+                    # if the profile of the commenter exists
+                    if len(commenter_profile_object) >0 and commenter_profile_object[0].imageurl:
+                        profile_pic_url = commenter_profile_object[0].imageurl
+                        activity_item.object['latestcomment'] = dict(author=settings.BASE_URL + "users/" + lc[0].author,
+                                                                     authorname=fullname, body=lc[0].body,
+                                                                     creationdate=lc[0].created_at,
+                                                                     imageurl=profile_pic_url)
+                    else:
+                        activity_item.object['latestcomment'] = dict(author=settings.BASE_URL + "users/" + lc[0].author,
                                                                      authorname=fullname, body=lc[0].body,
                                                                      creationdate=lc[0].created_at,
                         )
