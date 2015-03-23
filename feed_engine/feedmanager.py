@@ -19,6 +19,9 @@ class FeedManager(Manager):
         for rel in rels:
             ids_high.append(rel.target_user)
 
+        # adding the user id so that we can also see its activities when calling activities/flat
+        ids_high.append(user_id)
+        
         #user_id will have to be usernames
         #return a dictionary of usernames with different priorities
         #e.g, {'HIGH':[], 'LOW':[]}
