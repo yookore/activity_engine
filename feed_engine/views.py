@@ -8,7 +8,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from cassandra.cluster import Cluster
 from rest_framework.response import Response
-import time_uuid
+import time_uuid, uuid
 
 from stream_framework.storage.cassandra.models import Activity, AggregatedActivity
 from stream_framework.verbs import get_verb_by_id
@@ -290,6 +290,15 @@ def enrich_custom_activities(activities):
                 activity_item.object['filename'] = str(content_object[0].filename)
                 activity_item.object['caption'] = str(content_object[0].caption)
             # END - audio feature additions
+
+            # has this object been like by this author before?
+            query = "select * from like where author='"+ content_object[0].author+"' "
+            query += " and object_id="+str(content_object[0].id)+" allow filtering"
+            like_object = session.execute(query)
+            if len(like_object)>0:
+                activity_item.object['liked'] = True
+            else:
+                activity_item.object['liked'] = False
 
             '''activity_item.object['url'] = settings.BASE_URL + "api/content/" + actor_object[0].username + "/" + str(
                 content_object[0].id)'''

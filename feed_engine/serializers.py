@@ -32,6 +32,7 @@ class ObjectSerializer(serializers.Serializer):
     latestcomment = serializers.DictField(required=False)
     img = serializers.CharField(required=False)
     url_original = serializers.CharField(required=False)
+    liked = serializers.BooleanField(required=False)
     # Emile - audio feature additions
     filename = serializers.CharField(required=False)
     caption = serializers.CharField(required=False)
