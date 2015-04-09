@@ -70,12 +70,12 @@ def create_activity(request):
             if act['verb_id'] != '12':
                 from stream_framework.activity import Activity
                 activity = Activity(
-                    actor=act['author'],
-                    object=act['object_id'],
-                    object_type=act['object_type'],
-                    verb=get_verb_by_id(int(act['verb_id'])),
-                    target=act['target_id'],
-                    target_type=act['target_type'],
+                    actor       = act['author'],
+                    object      = act['object_id'],
+                    object_type = act['object_type'],
+                    verb        = get_verb_by_id(int(act['verb_id'])),
+                    target      = act['target_id'],
+                    target_type = act['target_type'],
                 )
                 actor = act['author']
                 print act["created_at"]
@@ -114,10 +114,10 @@ def get_activities(request, username, nextset=None, pointer='next'):
     # activities = list(feed[:5])
 
     try:
-        timeline = uncapped_activities[:25]
-        a_id = timeline[len(timeline) - 1].activity_id
-        p_id = timeline[0].activity_id
-        itemlist = enrich_custom_activities(timeline)
+        timeline    = uncapped_activities[:25]
+        a_id        = timeline[len(timeline) - 1].activity_id
+        p_id        = timeline[0].activity_id
+        itemlist    = enrich_custom_activities(timeline)
 
         results = {'itemsperpage': len(timeline), 'list': itemlist,
                    'next': settings.BASE_URL + username + "/activities/next/" + str(a_id),
@@ -150,17 +150,16 @@ def get_flat_activities(request, username, nextset=None, pointer='next'):
     else:
         uncapped_activities = Activity.filter(feed_id=feed.key)
 
-
     # activities = list(feed[:5])
 
     try:
         # How do I get unique activities and stuff the most recent
         # activity in the object
 
-        activities = uncapped_activities[:25]
-        a_id = activities[len(activities) - 1].activity_id
-        p_id = activities[0].activity_id
-        itemlist = enrich_custom_activities(activities)
+        activities  = uncapped_activities[:25]
+        a_id        = activities[len(activities) - 1].activity_id
+        p_id        = activities[0].activity_id
+        itemlist    = enrich_custom_activities(activities)
 
         results = {'itemsperpage': len(activities), 'list': itemlist,
                    'next': settings.BASE_URL + username + "/activities/flat/next/" + str(a_id),
@@ -177,9 +176,9 @@ def get_flat_activities(request, username, nextset=None, pointer='next'):
 
 @api_view(['GET'])
 def get_aggregated_feed(request, username='ajibola'):
-    username = 'jomski2009'
-    feed = manager.get_feeds(username)['aggregated']
-    activities = feed[:10]
+    username    = 'jomski2009'
+    feed        = manager.get_feeds(username)['aggregated']
+    activities  = feed[:10]
 
     for activity in activities:
         print activity.activities[:1]
@@ -222,6 +221,7 @@ def enrich_custom_activities(activities):
         # Build the activity stream object...
         print a
         activity_item = ActivityItemModel()
+        # Should be empty
         print content_by_author_stmt, a.actor, a.object
         object = session.execute(content_by_author_stmt, [a.actor, a.object])
         print type(object)
@@ -237,7 +237,7 @@ def enrich_custom_activities(activities):
             #raise Exception(actor_object)
 
             # Actor element
-            activity_item.actor['id'] = actor_object[0].username
+            activity_item.actor['id'] = unicode(actor_object[0].username)
             activity_item.actor['displayname'] = actor_object[0].firstname + " " + actor_object[0].lastname
             activity_item.actor['objecttype'] = 'yookos:person'
             activity_item.actor['creationdate'] = actor_object[0].creationdate
@@ -266,8 +266,12 @@ def enrich_custom_activities(activities):
             activity_item.object['type'] = content_object[0].content_type
             if content_object[0].title:
                 activity_item.object['title'] = content_object[0].title
+            else:
+                activity_item.object['title'] = ''
             if content_object[0].body:
                 activity_item.object['text'] = content_object[0].body
+            else:
+                activity_item.object['text'] = ''
             activity_item.object['publishdate'] = content_object[0].created_at
             activity_item.object['likes'] = content_object[0].like_count
             activity_item.object['views'] = content_object[0].view_count
@@ -283,12 +287,23 @@ def enrich_custom_activities(activities):
                 activity_item.object['url_original'] = str(content_object[0].url_original)
             else:
                 activity_item.object['url_original'] = ''
+            if content_object[0].image_url:
+                activity_item.object['image_url'] = str(content_object[0].image_url)
+            else:
+                activity_item.object['image_url'] = ''
             # END - adding images to the feed
 
             # Emile - audio feature additions
-            if content_object[0].content_type == "audio":
+            if content_object[0].content_type == "audioblog" or content_object[0].content_type == "audio":
                 activity_item.object['filename'] = str(content_object[0].filename)
                 activity_item.object['caption'] = str(content_object[0].caption)
+            elif content_object[0].content_type == "photo":
+                activity_item.object['filename'] = str(content_object[0].filename)
+                activity_item.object['caption'] = str(content_object[0].caption)
+            else:
+                activity_item.object['filename'] = ''
+                activity_item.object['caption'] = ''
+
             # END - audio feature additions
 
             # has this object been like by this author before?
@@ -344,11 +359,13 @@ def enrich_custom_activities(activities):
                     if len(commenter_profile_object) >0 and commenter_profile_object[0].imageurl:
                         profile_pic_url = commenter_profile_object[0].imageurl
                         activity_item.object['latestcomment'] = dict(author=settings.BASE_URL + "users/" + lc[0].author,
+                                                                     username= lc[0].author,
                                                                      authorname=fullname, body=lc[0].body,
                                                                      creationdate=lc[0].created_at,
                                                                      imageurl=profile_pic_url)
                     else:
                         activity_item.object['latestcomment'] = dict(author=settings.BASE_URL + "users/" + lc[0].author,
+                                                                     username= lc[0].author,
                                                                      authorname=fullname, body=lc[0].body,
                                                                      creationdate=lc[0].created_at,
                         )
